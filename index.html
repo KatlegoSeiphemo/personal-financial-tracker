@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Finance Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+
+        .form-section {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        input, select {
+            padding: 10px;
+            margin: 5px;
+            width: calc(33.33% - 22px);
+        }
+
+        button {
+            padding: 10px 20px;
+            color: #fff;
+            background-color: #28a745;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .currency-section {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .income-section, .expense-section {
+            margin: 20px 0;
+        }
+
+        .income-section h3, .expense-section h3 {
+            text-align: left;
+            margin: 10px 0 5px 0;
+        }
+
+        .total-balance {
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .removeButton {
+            background-color: #dc3545; /* Bootstrap danger color */
+        }
+
+        .removeButton:hover {
+            background-color: #c82333; /* Darker red */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Personal Finance Tracker</h1>
+
+        <div class="currency-section">
+            <label for="currency">Select Currency: </label>
+            <select id="currency">
+                <option value="USD">$ (USD)</option>
+                <option value="EUR">€ (EUR)</option>
+                <option value="GBP">£ (GBP)</option>
+                <option value="JPY">¥ (JPY)</option>
+                <option value="ZAR">R (ZAR)</option> <!-- Added South African Rand -->
+            </select>
+        </div>
+        
+        <div class="form-section">
+            <input type="text" id="description" placeholder="Description">
+            <input type="number" id="amount" placeholder="Amount">
+            <select id="type">
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+            </select>
+            <button id="addTransaction">Add Transaction</button>
+        </div>
+
+        <h2>Transactions</h2>
+
+        <div class="income-section">
+            <h3>Income</h3>
+            <ul id="incomeList"></ul>
+        </div>
+        
+        <div class="expense-section">
+            <h3>Expenses</h3>
+            <ul id="expenseList"></ul>
+        </div>
+
+        <h2 class="total-balance">Total Balance: <span id="currencySymbol">$</span><span id="balance">0.00</span></h2>
+        
+    </div>
+    <script>
+        let transactions = [];
+        let balance = 0;
+        let currencySymbol = '$';
+        let editingIndex = null;
+
+        document.getElementById('addTransaction').addEventListener('click', function() {
+            const description = document.getElementById('description').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const type = document.getElementById('type').value;
+
+            if (description === '' || isNaN(amount)) {
+                alert('Please provide a valid description and amount');
+                return;
+            }
+
+            if (editingIndex !== null) {
+                // Update mode
+                transactions[editingIndex] = { description, amount, type };
+                editingIndex = null; // Reset the index after updating
+                document.getElementById('addTransaction').innerText = 'Add Transaction'; // Reset button text
+            } else {
+                // Add new transaction
+                const transaction = { description, amount, type };
+                transactions.push(transaction);
+            }
+
+            updateBalance();
+            displayTransactions();
+            clearInputs();
+        });
+
+        document.getElementById('currency').addEventListener('change', function() {
+            currencySymbol = getCurrencySymbol(this.value);
+            updateBalance();
+            displayTransactions();
+            document.getElementById('currencySymbol').innerText = currencySymbol;
+        });
+
+        function getCurrencySymbol(currency) {
+            switch (currency) {
+                case 'USD': return '$';
+                case 'EUR': return '€';
+                case 'GBP': return '£';
+                case 'JPY': return '¥';
+                case 'ZAR': return 'R'; // South African Rand symbol
+                default: return '$';
+            }
+        }
+
+        function updateBalance() {
+            balance = transactions.reduce((total, transaction) => {
+                return transaction.type === 'income' ? total + transaction.amount : total - transaction.amount;
+            }, 0);
+            document.getElementById('balance').innerText = balance.toFixed(2);
+        }
+
+        function displayTransactions() {
+            const incomeList = document.getElementById('incomeList');
+            const expenseList = document.getElementById('expenseList');
+            incomeList.innerHTML = '';
+            expenseList.innerHTML = '';
+            
+            transactions.forEach((transaction, index) => {
+                const li = document.createElement('li');
+                li.innerText = `${transaction.description} - ${currencySymbol}${transaction.amount.toFixed(2)}`;
+
+                // Create edit and remove buttons
+                const editButton = document.createElement('button');
+                editButton.innerText = 'Edit';
+                editButton.addEventListener('click', () => {
+                    editTransaction(index);
+                });
+
+                const removeButton = document.createElement('button');
+                removeButton.innerText = 'Remove';
+                removeButton.className = 'removeButton';
+                removeButton.addEventListener('click', () => {
+                    removeTransaction(index);
+                });
+
+                li.appendChild(editButton);
+                li.appendChild(removeButton);
+
+                // Append the transaction to the appropriate list
+                if (transaction.type === 'income') {
+                    incomeList.appendChild(li);
+                } else {
+                    expenseList.appendChild(li);
+                }
+            });
+        }
+
+        function editTransaction(index) {
+            const transaction = transactions[index];
+            document.getElementById('description').value = transaction.description;
+            document.getElementById('amount').value = transaction.amount;
+            document.getElementById('type').value = transaction.type;
+            editingIndex = index; // Set the index of the transaction being edited
+            document.getElementById('addTransaction').innerText = 'Update Transaction'; // Change button text
+        }
+
+        function removeTransaction(index) {
+            transactions.splice(index, 1); // Remove the transaction from the array
+            updateBalance(); // Update the balance
+            displayTransactions(); // Repopulate the transaction list
+        }
+
+        function clearInputs() {
+            document.getElementById('description').value = '';
+            document.getElementById('amount').value = '';
+            document.getElementById('type').value = 'income';
+        }
+    </script>
+</body>
+</html>
