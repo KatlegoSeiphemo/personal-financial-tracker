@@ -1,1 +1,1 @@
-# personal-financial-tracker
+i created a personal financial tracker to help people with managing their money properly. not all the money we recive is through the bank sometimes its cash so its easier to see how much you spent and how much you recieved.
